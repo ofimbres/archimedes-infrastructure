@@ -2,7 +2,7 @@
   "name": "cognito",
   "version": "0.1.0",
   "bin": {
-    "cognito": "bin/cognito.js"
+    "cognito": "bin/app.js"
   },
   "scripts": {
     "build": "tsc",

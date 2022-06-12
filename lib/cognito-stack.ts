@@ -1,14 +1,3 @@
-// import { Stack, StackProps } from 'aws-cdk-lib';
-// import { Construct } from 'constructs';
-
-// export class CognitoStack extends Stack {
-//   constructor(scope: Construct, id: string, props?: StackProps) {
-//     super(scope, id, props);
-
-//     // The code that defines your stack goes here
-//   }
-// }
-
 import { aws_cognito as cognito, Stack, StackProps, CfnOutput } from 'aws-cdk-lib'
 import { Construct } from 'constructs'
 
