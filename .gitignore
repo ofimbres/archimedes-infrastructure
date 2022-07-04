@@ -1,10 +1,10 @@
 .DS_Store
 .idea/
-lib/*.d.ts
-lib/*.js
-bin/*.d.ts
-bin/*.js
-test/*.d.ts
-test/*.js
+lib/**/*.d.ts
+lib/**/*.js
+bin/**/*.d.ts
+bin/**/*.js
+test/**/*.d.ts
+test/**/*.js
 cdk.out/
 node_modules/
