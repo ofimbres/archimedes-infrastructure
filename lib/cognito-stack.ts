@@ -1,4 +1,4 @@
-import { aws_cognito as cognito, Stack, StackProps, CfnOutput } from 'aws-cdk-lib'
+import { aws_cognito as cognito, Stack, StackProps, CfnOutput, RemovalPolicy } from 'aws-cdk-lib'
 import { Construct } from 'constructs'
 
 // https://docs.aws.amazon.com/cdk/api/latest/docs/aws-cognito-readme.html
@@ -8,17 +8,22 @@ export class CognitoStack extends Stack {
     super(scope, id, props)
 
     // The code that defines your stack goes here
-    const userPool = new cognito.UserPool(this, 'test-user-pool', {
+    const userPool = new cognito.UserPool(this, 'archimedes-user-pool', {
+      userPoolName: 'archimedes-user-pool',
       signInAliases: {
         email: true,
         username: true,
       },
-      // standardAttributes: {
+      standardAttributes: {
       //   profilePicture: { mutable: true },
-      // },
-      // customAttributes: {
-      //   isEmployee: new cognito.BooleanAttribute({ mutable: true }),
-      // },
+        givenName: { required: true, mutable: true, },
+        familyName: { required: true, mutable: true, },
+      },
+      customAttributes: {
+        isStudent: new cognito.StringAttribute({ mutable: true }),
+        isTeacher: new cognito.StringAttribute({ mutable: true }),
+        isAdmin: new cognito.StringAttribute({ mutable: true }),
+      },
       passwordPolicy: {
         minLength: 8,
         requireDigits: false,
@@ -33,6 +38,7 @@ export class CognitoStack extends Stack {
         emailStyle: cognito.VerificationEmailStyle.CODE,
         smsMessage: 'Hello {username}, Thanks for signing up to our awesome app! Your verification code is {####}',
       },
+      removalPolicy: RemovalPolicy.RETAIN,
     })
 
     const client = userPool.addClient('app-client')
