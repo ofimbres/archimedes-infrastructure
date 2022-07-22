@@ -13,8 +13,8 @@ export class ExerciseStack extends Stack {
     super(scope, id, props)
 
     // Create the public S3 bucket
-    const exerciseResultsBucket = new s3.Bucket(this, 'archimedes-exercise-results-bucket', {
-      bucketName: 'archimedes-exercise-results2',
+    const exerciseResultsBucket = new s3.Bucket(this, 'archimedes-exercise-results-bucket2', {
+      bucketName: 'archimedes-exercise-results3',
       removalPolicy: cdk.RemovalPolicy.RETAIN,
       encryption: s3.BucketEncryption.S3_MANAGED,
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
@@ -34,7 +34,7 @@ export class ExerciseStack extends Stack {
     // Deploy static code/files into Bucket.
     new s3Deployment.BucketDeployment(
       this,
-      'deployDefaultObjects',
+      'deployDefaultObjects4',
       {
         sources: [s3Deployment.Source.asset('./resources/exercise-results-default-content')],
         destinationBucket: exerciseResultsBucket,
@@ -42,8 +42,8 @@ export class ExerciseStack extends Stack {
     );
 
     // Create the public S3 bucket
-    const miniQuizzesBucket = new s3.Bucket(this, 'archimedes-mini-quizzes-bucket', {
-      bucketName: 'archimedes-mini-quizzes2',
+    const miniQuizzesBucket = new s3.Bucket(this, 'archimedes-mini-quizzes-bucket2', {
+      bucketName: 'archimedes-mini-quizzes3',
       removalPolicy: cdk.RemovalPolicy.RETAIN,
       encryption: s3.BucketEncryption.S3_MANAGED,
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
@@ -63,72 +63,64 @@ export class ExerciseStack extends Stack {
     // Deploy static code/files into Bucket.
     new s3Deployment.BucketDeployment(
       this,
-      'deployDefaultObjects2',
+      'deployDefaultObjects3',
       {
         sources: [s3Deployment.Source.asset('./resources/exercises-default-content')],
         destinationBucket: miniQuizzesBucket,
       }
     );
 
-    const exerciseResultsTable = new dynamodb.Table(this, 'archimedes-exercise-results-table', {
+    const dataTable = new dynamodb.Table(this, 'archimedes-data-table3', {
       partitionKey: {
-        name: 'id', // STUDENT#123#EXERCISE#WN1
+        name: 'pk',
         type: dynamodb.AttributeType.STRING
       },
       sortKey: {
-        name: 'created_at', // 123456
-        type: dynamodb.AttributeType.NUMBER
+        name: 'sk',
+        type: dynamodb.AttributeType.STRING
       },
-      tableName: 'ArchimedesExerciseResults',
+      tableName: 'ArchimedesData3',
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
       removalPolicy: cdk.RemovalPolicy.RETAIN,
     });
 
-    new cdk.custom_resources.AwsCustomResource(this, 'initDBResource', {
-      onCreate: {
-        service: 'DynamoDB',
-        action: 'putItem',
-        parameters: {
-          TableName: 'ArchimedesExerciseResults',
-          Item: { id: { S: 'STUDENT#1004EXERCISE#WN16' }, created_at: { N: '1628957203942' }, score: { N: '20' } },
-        },
-        physicalResourceId: cdk.custom_resources.PhysicalResourceId.of('initDBResource'),
-      },
-      policy: cdk.custom_resources.AwsCustomResourcePolicy.fromSdkCalls({
-        resources: cdk.custom_resources.AwsCustomResourcePolicy.ANY_RESOURCE,
-      }),
+    // add global secondary index
+    dataTable.addGlobalSecondaryIndex({
+      indexName: 'gsi1',
+      partitionKey: { name: 'gsipk', type: dynamodb.AttributeType.STRING },
+      sortKey: { name: 'gsisk', type: dynamodb.AttributeType.STRING },
+      projectionType: dynamodb.ProjectionType.ALL,
     });
 
-    const exercisesTable = new dynamodb.Table(this, 'archimedes-exercises-table', {
-      partitionKey: {
-        name: 'code', // WN04
-        type: dynamodb.AttributeType.STRING
-      },
-      sortKey: {
-        name: 'sk', // METADATA#WN04
-        type: dynamodb.AttributeType.STRING
-      },
-      tableName: 'ArchimedesExercises',
-      billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
-      removalPolicy: cdk.RemovalPolicy.RETAIN,
-    });
-
-    new cdk.custom_resources.AwsCustomResource(this, 'initDBResource2', {
+    new cdk.custom_resources.AwsCustomResource(this, 'initDBResource3', {
       onCreate: {
         service: 'DynamoDB',
         action: 'batchWriteItem',
         parameters: {
           RequestItems: {
-            ['ArchimedesExercises']:
+            ['ArchimedesData3']:
                 [
-                    { PutRequest: { Item: { code: { S: 'WN04' }, sk: { S: 'METADATA#WN04' }, name: { S: 'Adding Whole Numbers' }, s3Location: { S: 'WN04.htm' }, type: { S: 'miniquiz' } } } },
-                    { PutRequest: { Item: { code: { S: 'WN04' }, sk: { S: 'TOPIC#wholenumbers/add' }, indexName: { S: 'Whole Numbers / Add' } } } },
-                    { PutRequest: { Item: { code: { S: 'WN16' }, sk: { S: 'METADATA#WN16' }, name: { S: 'Multiplying Whole Numbers' }, s3Location: { S: 'WN16.htm' }, type: { S: 'miniquiz' } } } },
-                    { PutRequest: { Item: { code: { S: 'WN16' }, sk: { S: 'TOPIC#wholenumbers/multiply' }, indexName: { S: 'Whole Numbers / Multiply' } } } },
+                    { PutRequest: { Item: { pk: { S: 'STUDENT#OSCAR' }, sk: { S: 'STUDENT#OSCAR' }, type: { S: 'STUDENT' }, name: { S: 'Oscar' },  } } },
+                    { PutRequest: { Item: { pk: { S: 'STUDENT#TOM' }, sk: { S: 'STUDENT#TOM' }, type: { S: 'STUDENT' }, name: { S: 'Tom' } } } },
+                    { PutRequest: { Item: { pk: { S: 'STUDENT#DANIELA' }, sk: { S: 'STUDENT#DANIELA' }, type: { S: 'STUDENT' }, name: { S: 'Daniela' } } } },
+                    { PutRequest: { Item: { pk: { S: 'TEACHER#SIMON' }, sk: { S: 'TEACHER#SIMON' }, type: { S: 'TEACHER' }, name: { S: 'Simon' } } } },
+                    { PutRequest: { Item: { pk: { S: 'SCHOOL#LAMAR' }, sk: { S: 'SCHOOL#LAMAR' }, type: { S: 'SCHOOL' }, name: { S: 'Lamar' } } } },
+
+                    { PutRequest: { Item: { pk: { S: 'TEACHER#SIMON#CLASS#MATH' }, sk: { S: 'CLASS#MATH' }, type: { S: 'CLASS' }, subject: { S: 'Math' } } } },
+                    { PutRequest: { Item: { pk: { S: 'TEACHER#SIMON#CLASS#MATH' }, sk: { S: 'STUDENT#TOM' }, type: { S: 'CLASS_STUDENT' }, subject: { S: 'Math' }, name: { S: 'Tom' }, gsipk: { S: 'STUDENT#TOM' }, gsisk: { S: 'STUDENT#TOM' } } } },
+                    { PutRequest: { Item: { pk: { S: 'TEACHER#SIMON#CLASS#MATH' }, sk: { S: 'STUDENT#OSCAR' }, type: { S: 'CLASS_STUDENT' }, subject: { S: 'Math' }, name: { S: 'Oscar' }, gsipk: { S: 'STUDENT#TOM' }, gsisk: { S: 'STUDENT#TOM' } } } },
+                    { PutRequest: { Item: { pk: { S: 'TEACHER#SIMON#CLASS#MATH' }, sk: { S: 'STUDENT#DANIELA' }, type: { S: 'CLASS_STUDENT' }, subject: { S: 'Math' }, name: { S: 'Daniela' }, gsipk: { S: 'STUDENT#TOM' }, gsisk: { S: 'STUDENT#TOM' } } } },
+
+                    { PutRequest: { Item: { pk: { S: 'EXERCISE#WN16' }, sk: { S: 'EXERCISE#WN16' }, type: { S: 'EXERCISE' }, code: { S: 'WN16' }, name: { S: 'Multiplying Whole Numbers' }, s3Location: { S: 'WN16.htm' }, classification: { S: 'Miniquiz' } } } },
+                    { PutRequest: { Item: { pk: { S: 'CLASS#MATH#STUDENT#TOM' }, sk: { S: 'EXERCISE#WN16' }, type: { S: 'EXERCISE_ASSIGNMENT' }, code: { S: 'WN16' }, name: { S: 'Multiplying Whole Numbers' }, isCompleted: { N: '1' }, gsipk: { S: 'EXERCISE#WN16' }, gsisk: { S: 'EXERCISE#WN16' } } } },
+                    { PutRequest: { Item: { pk: { S: 'CLASS#MATH#STUDENT#OSCAR' }, sk: { S: 'EXERCISE#WN16' }, type: { S: 'EXERCISE_ASSIGNMENT' }, code: { S: 'WN16' }, name: { S: 'Multiplying Whole Numbers' }, isCompleted: { N: '0' }, gsipk: { S: 'EXERCISE#WN16' }, gsisk: { S: 'EXERCISE#WN16' } } } },
+                    { PutRequest: { Item: { pk: { S: 'CLASS#MATH#STUDENT#DANIELA' }, sk: { S: 'EXERCISE#WN16' }, type: { S: 'EXERCISE_ASSIGNMENT' }, code: { S: 'WN16' }, name: { S: 'Multiplying Whole Numbers' }, isCompleted: { N: '1' }, gsipk: { S: 'EXERCISE#WN16' }, gsisk: { S: 'EXERCISE#WN16' } } } },
+                    { PutRequest: { Item: { pk: { S: 'CLASS#MATH#STUDENT#TOM#EXERCISE#WN16' }, sk: { S: 'TIMESTAMP#2020-10-19T09:19:32' }, score: { N: '20' }, timestamp: { S: '2020-10-19T09:19:32' }, gsipk: { S: 'CLASS#MATH' }, gsisk: { S: 'CLASS#MATH' } } } },
+                    { PutRequest: { Item: { pk: { S: 'CLASS#MATH#STUDENT#DANIELA#EXERCISE#WN16' }, sk: { S: 'TIMESTAMP#2020-10-19T11:19:32' }, score: { N: '85' }, timestamp: { S: '2020-10-19T11:19:32' }, gsipk: { S: 'CLASS#MATH' }, gsisk: { S: 'CLASS#MATH' } } } },
                 ]
           },
         },
-        physicalResourceId: cdk.custom_resources.PhysicalResourceId.of('initDBResource2'),
+        physicalResourceId: cdk.custom_resources.PhysicalResourceId.of('initDBResource3'),
       },
       policy: cdk.custom_resources.AwsCustomResourcePolicy.fromSdkCalls({
         resources: cdk.custom_resources.AwsCustomResourcePolicy.ANY_RESOURCE,

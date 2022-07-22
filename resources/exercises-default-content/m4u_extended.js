@@ -15,17 +15,20 @@ function submitForm() {
    return false;
 }
 
-function init() {
-   const STUDENT_NAME_CELL = 'B60';
-   const STUDENT_ID_CELL = 'G60';
+function updateCellFields(event) {
+    //if (event.origin !== "http://example.org:8080")
+    //  return;
+    let message = event.data;
+    wwsSetCell(STUDENT_NAME_CELL, message.studentName);
+    wwsSetCell(STUDENT_ID_CELL, message.studentId);
+}
 
-   window.addEventListener("message", (event) => {
-      //if (event.origin !== "http://example.org:8080")
-      //  return;
-      let message = event.data;
-      wwsSetCell(STUDENT_NAME_CELL, message.studentName);
-      wwsSetCell(STUDENT_ID_CELL, message.studentId);
-    }, false);
+function init() {
+    const STUDENT_NAME_CELL = 'B60';
+    const STUDENT_ID_CELL = 'G60';
+
+    // https://stackoverflow.com/questions/65695171/why-does-javascript-window-postmessage-create-duplicate-messages
+    window.addEventListener("message", updateCellFields, false);
 }
 
 init();
