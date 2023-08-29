@@ -13,9 +13,12 @@
   "devDependencies": {
     "@types/jest": "^26.0.10",
     "@types/node": "10.17.27",
+    "aws-cdk": "2.0.0-rc.25",
+    "aws-sdk": "^2.1445.0",
+    "csv-parse": "^5.4.1",
+    "csvtojson": "^2.0.10",
     "jest": "^26.4.2",
     "ts-jest": "^26.2.0",
-    "aws-cdk": "2.0.0-rc.25",
     "ts-node": "^9.0.0",
     "typescript": "~3.9.7"
   },
