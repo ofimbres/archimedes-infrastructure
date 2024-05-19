@@ -6,23 +6,24 @@ import { aws_cognito as cognito, Stack, StackProps, CfnOutput, RemovalPolicy } f
 import { Construct } from 'constructs';
 import * as path from 'path';
 
-export class Security extends Construct {
-    constructor(scope: Construct, id: string) {
+export class Cognito extends Construct {
+    constructor(scope: Construct, id: string, stage: string) {
       super(scope, id);
 
-    const postConfirmationFn = new lambda.Function(this, 'postConfirmationFn', {
-      runtime: lambda.Runtime.NODEJS_14_X,
+    const postConfirmationFn = new lambda.Function(this, 'post-confirmation-function', {
+      functionName: `${stage}-archimedes-cognito-post-confirmation`,
+      runtime: lambda.Runtime.NODEJS_20_X,
       handler: 'index.handler',
-      code: lambda.Code.fromAsset(path.join(__dirname, 'runtime')),
+      code: lambda.Code.fromAsset(path.join(__dirname, '../../lambda/cognito_post_confirmation')),
       environment: {
         REGION: 'us-west-2',
-        TABLE_NAME: 'ArchimedesData'
+        TABLE_NAME: `${stage}-archimedes-table`
       }
     });
 
     // The code that defines your stack goes here
-    const userPool = new cognito.UserPool(this, 'archimedes-user-pool', {
-        userPoolName: 'archimedes-user-pool',
+    const userPool = new cognito.UserPool(this, 'user-pool', {
+        userPoolName: `${stage}-archimedes-user-pool`,
         signInAliases: {
           email: true,
           username: true,
@@ -31,11 +32,6 @@ export class Security extends Construct {
         //   profilePicture: { mutable: true },
           givenName: { required: true, mutable: true, },
           familyName: { required: true, mutable: true, },
-        },
-        customAttributes: {
-          isStudent: new cognito.StringAttribute({ mutable: true }),
-          isTeacher: new cognito.StringAttribute({ mutable: true }),
-          isAdmin: new cognito.StringAttribute({ mutable: true }),
         },
         passwordPolicy: {
           minLength: 8,
@@ -46,16 +42,31 @@ export class Security extends Construct {
         },
         selfSignUpEnabled: true,
         userVerification: {
-          emailSubject: 'Verify your email for our awesome app!',
-          emailBody: 'Hello {username}, Thanks for signing up to our awesome app! Your verification code is {####}',
+          emailSubject: 'Verify your email!',
+          emailBody: 'Hello {username}, Thanks for signing up! Your verification code is {####}',
           emailStyle: cognito.VerificationEmailStyle.CODE,
-          smsMessage: 'Hello {username}, Thanks for signing up to our awesome app! Your verification code is {####}',
+          smsMessage: 'Hello {username}, Thanks for signing up! Your verification code is {####}',
         },
         removalPolicy: RemovalPolicy.RETAIN,
         lambdaTriggers: {
           postConfirmation: postConfirmationFn
         }
       })
+
+      const studentGroup = new cognito.CfnUserPoolGroup(this, "student-group", {
+        groupName: "students",
+        userPoolId: userPool.userPoolId
+      });
+
+      const teacherGroup = new cognito.CfnUserPoolGroup(this, "teacher-group", {
+        groupName: "teachers",
+        userPoolId: userPool.userPoolId
+      });
+
+      const adminGroup = new cognito.CfnUserPoolGroup(this, "admin-group", {
+        groupName: "admins",
+        userPoolId: userPool.userPoolId
+      });
   
       const client = userPool.addClient('app-client')
   

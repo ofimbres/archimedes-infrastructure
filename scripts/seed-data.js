@@ -1,5 +1,6 @@
 const AWS = require('aws-sdk');
 const data = require('../data_to_seed.json');
+
 AWS.config.update({ region: 'us-west-2' });
 const dynamoDB = new AWS.DynamoDB({ apiVersion: '2012-08-10' });
 

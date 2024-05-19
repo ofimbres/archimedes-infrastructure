@@ -1,7 +1,7 @@
 const fs = require('fs')
 const path = require('path')
 
-const tableName = 'ArchimedesData3'
+const tableName = 'ArchimedesData'
 const outputFilename = 'data_to_seed.json'
 
 function createMiniQuizzExercisesData(finalData) {
@@ -18,10 +18,10 @@ function createMiniQuizzExercisesData(finalData) {
       'name': { 'S': data['EXERCISE DESCRIPTION'] },
       'path': { 'S': `mini-quiz/${data['EXERCISE ID']}.html` },
       'classification': { 'S': 'miniquiz' },
-      'gsipk': { 'S': `EXERCISE#${data['EXERCISE ID']}` },
-      'gsisk': { 'S': `TOPIC#${topic_upper}` },
-      'gsipk2': { 'S': `TOPIC#${topic_upper}` },
-      'gsisk2': { 'S': `EXERCISE#${data['EXERCISE ID']}` }
+      'gsi1pk': { 'S': `EXERCISE#${data['EXERCISE ID']}` },
+      'gsi1sk': { 'S': `TOPIC#${topic_upper}` },
+      'gsi2pk': { 'S': `TOPIC#${topic_upper}` },
+      'gsi2sk': { 'S': `EXERCISE#${data['EXERCISE ID']}` }
     }
 
     request = { PutRequest: { Item: item } };
