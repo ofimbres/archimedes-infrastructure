@@ -68,7 +68,13 @@ export class Cognito extends Construct {
         userPoolId: userPool.userPoolId
       });
   
-      const client = userPool.addClient('app-client')
+      const client = userPool.addClient('app-client', {
+        authFlows: {
+          userPassword: true,
+          adminUserPassword: true,
+          userSrp: true,
+        },
+      });
   
       new CfnOutput(this, 'userPoolId', {
         value: userPool.userPoolId,

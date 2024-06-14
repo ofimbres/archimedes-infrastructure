@@ -1,7 +1,7 @@
 const fs = require('fs')
 const path = require('path')
 
-const tableName = 'ArchimedesData'
+const tableName = 'dev-archimedes-table'
 const outputFilename = 'data_to_seed.json'
 
 function createMiniQuizzExercisesData(finalData) {
