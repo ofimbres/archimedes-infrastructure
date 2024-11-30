@@ -33,6 +33,9 @@ export class Cognito extends Construct {
           givenName: { required: true, mutable: true, },
           familyName: { required: true, mutable: true, },
         },
+        customAttributes: {
+          'custom:userId': new cognito.StringAttribute({ mutable: true }),
+        },
         passwordPolicy: {
           minLength: 8,
           requireDigits: false,
@@ -41,12 +44,12 @@ export class Cognito extends Construct {
           requireUppercase: false,
         },
         selfSignUpEnabled: true,
-        userVerification: {
+        /*userVerification: {
           emailSubject: 'Verify your email!',
-          emailBody: 'Hello {username}, Thanks for signing up! Your verification code is {####}',
+          emailBody: 'Hello {username}. Your verification code is {####}',
           emailStyle: cognito.VerificationEmailStyle.CODE,
-          smsMessage: 'Hello {username}, Thanks for signing up! Your verification code is {####}',
-        },
+          smsMessage: 'Hello {username}. Your verification code is {####}',
+        },*/
         removalPolicy: RemovalPolicy.RETAIN,
         lambdaTriggers: {
           postConfirmation: postConfirmationFn

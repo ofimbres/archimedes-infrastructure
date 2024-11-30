@@ -3,7 +3,7 @@ const fs = require('fs')
 const path = require('path')
 
 topics_filename = './assets/data/topics.csv'
-mini_quizz_exercises_filename = './assets/data/mini-quizz-exercises.csv'
+mini_quizz_exercises_filename = './assets/data/mini-quiz-activities.csv'
 
 function csvToJson(filename, outputFilename) {
     csv()
@@ -18,5 +18,5 @@ function csvToJson(filename, outputFilename) {
         });
 }
 
-csvToJson(topics_filename, './topics.json')
-csvToJson(mini_quizz_exercises_filename, './mini-quizz-exercises.json')
+csvToJson(topics_filename, './scripts/output/topics.json')
+csvToJson(mini_quizz_exercises_filename, './scripts/output/mini-quiz-activities.json')
