@@ -46,16 +46,20 @@ function createMiniQuizzExercisesData(finalData) {
     subtopic_upper = data['SUBTOPIC'].toUpperCase().replaceAll(' ', '_')
 
     item = {
-      'pk': { 'S': `TOPIC#${topic_upper}#SUBTOPIC#${subtopic_upper}` },
-      'sk': { 'S': `ACTIVITY#${data['ACTIVITY_ID']}` },
-      'entityType': { 'S': 'ACTIVITY' },
+      'pk': { 'S': `EXERCISE#${data['ACTIVITY_ID']}` },
+      'sk': { 'S': '#METADATA' },
+      'entityType': { 'S': 'EXERCISE' },
+      'exerciseId': { 'S': data['ACTIVITY_ID'] },
+      'topicId': { 'S': topic_upper },
+      'subtopicId': { 'S': subtopic_upper },
       'name': { 'S': data['ACTIVITY_DESCRIPTION'] },
-      'path': { 'S': `miniquizzes/${data['ACTIVITY_ID']}.html` },
-      'activity_type': { 'S': 'miniquiz' },
-      'parentEntityKey': { 'S': `ACTIVITY#${data['ACTIVITY_ID']}` },
-      'childEntityKey': { 'S': `TOPIC#${topic_upper}` },
-      'searchTypeKey': { 'S': `TOPIC#${topic_upper}` },
-      'searchValueKey': { 'S': `ACTIVITY#${data['ACTIVITY_ID']}` }
+      'exerciseType': { 'S': 'Miniquiz' },
+      'path': { 'S': `${data['ACTIVITY_ID']}.htm` },
+      'difficulty': { 'S': 'BEGINNER' },
+      'parentEntityKey': { 'S': `TOPIC#${topic_upper}#SUBTOPIC#${subtopic_upper}` },
+      'childEntityKey': { 'S': `EXERCISE#${data['ACTIVITY_ID']}` },
+      'searchTypeKey': { 'S': 'EXERCISE_TYPE' },
+      'searchValueKey': { 'S': `Miniquiz#${data['ACTIVITY_ID']}` }
     }
 
     request = { PutRequest: { Item: item } };
@@ -105,9 +109,11 @@ function createSubtopics(finalData) {
     subtopic_upper = data['SUBTOPIC'].toUpperCase().replaceAll(' ', '_')
 
     item = {
-      'pk': { 'S': `TOPIC#${topic_upper}` },
-      'sk': { 'S': `SUBTOPIC#${subtopic_upper}` },
+      'pk': { 'S': `TOPIC#${topic_upper}#SUBTOPIC#${subtopic_upper}` },
+      'sk': { 'S': '#METADATA' },
       'entityType': { 'S': 'SUBTOPIC' },
+      'topicId': { 'S': topic_upper },
+      'subtopicId': { 'S': subtopic_upper },
       'name': { 'S': data['SUBTOPIC'] },
       'parentTopicId': { 'S': topic_upper },
       'path': { 'S': `${data['TOPIC']} > ${data['SUBTOPIC']}` },
