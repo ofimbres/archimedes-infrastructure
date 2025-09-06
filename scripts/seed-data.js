@@ -2,7 +2,7 @@ const AWS = require('aws-sdk');
 const fs = require('fs')
 const path = require('path')
 
-const data = JSON.parse(fs.readFileSync('./scripts/output/data_to_seed.json'));
+const data = JSON.parse(fs.readFileSync('./scripts/output/dynamodb-data-to-seed.json'));
 
 AWS.config.update({ region: 'us-west-2' });
 const dynamoDB = new AWS.DynamoDB({ apiVersion: '2012-08-10' });

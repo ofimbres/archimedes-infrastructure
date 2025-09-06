@@ -10,8 +10,8 @@
         "args": { "VARIANT": "20" }
     },
     "mounts": [
-        "type=bind,source=${localEnv:HOME}/.aws,target=/home/node/.aws",
-        "type=bind,source=${localEnv:HOME}/.ssh,target=/home/node/.ssh"
+        "type=bind,source=${localEnv:HOME}/.aws,target=/home/node/.aws"
+        //"type=bind,source=${localEnv:HOME}/.ssh,target=/home/node/.ssh"
     ],
 
     // Configure tool-specific properties.
@@ -20,7 +20,8 @@
         "vscode": {
             // Add the IDs of extensions you want installed when the container is created.
             "extensions": [
-                "dbaeumer.vscode-eslint"
+                "dbaeumer.vscode-eslint",
+                "github.copilot-chat"
             ]
         }
     },

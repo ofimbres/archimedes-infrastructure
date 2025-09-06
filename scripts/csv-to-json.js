@@ -2,8 +2,12 @@ const csv = require("csvtojson")
 const fs = require('fs')
 const path = require('path')
 
-topics_filename = './assets/data/topics.csv'
-mini_quizz_exercises_filename = './assets/data/mini-quiz-activities.csv'
+// Get command line arguments
+const inputFile = process.argv[2] || './scripts/data/filtered-schools.csv'
+const outputFile = process.argv[3] || './scripts/output/schools.json'
+
+topics_filename = './data/topics.csv'
+mini_quizz_exercises_filename = './data/miniquiz-activities.csv'
 
 function csvToJson(filename, outputFilename) {
     csv()
@@ -18,5 +22,6 @@ function csvToJson(filename, outputFilename) {
         });
 }
 
+csvToJson(inputFile, outputFile)
 csvToJson(topics_filename, './scripts/output/topics.json')
-csvToJson(mini_quizz_exercises_filename, './scripts/output/mini-quiz-activities.json')
+csvToJson(mini_quizz_exercises_filename, './scripts/output/miniquiz-activities.json')

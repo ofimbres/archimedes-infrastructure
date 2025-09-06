@@ -10,17 +10,6 @@ export class Cognito extends Construct {
     constructor(scope: Construct, id: string, stage: string) {
       super(scope, id);
 
-    const postConfirmationFn = new lambda.Function(this, 'post-confirmation-function', {
-      functionName: `${stage}-archimedes-cognito-post-confirmation`,
-      runtime: lambda.Runtime.NODEJS_20_X,
-      handler: 'index.handler',
-      code: lambda.Code.fromAsset(path.join(__dirname, '../../lambda/cognito_post_confirmation')),
-      environment: {
-        REGION: 'us-west-2',
-        TABLE_NAME: `${stage}-archimedes-table`
-      }
-    });
-
     // The code that defines your stack goes here
     const userPool = new cognito.UserPool(this, 'user-pool', {
         userPoolName: `${stage}-archimedes-user-pool`,
@@ -50,10 +39,10 @@ export class Cognito extends Construct {
           emailStyle: cognito.VerificationEmailStyle.CODE,
           smsMessage: 'Hello {username}. Your verification code is {####}',
         },*/
-        removalPolicy: RemovalPolicy.RETAIN,
-        lambdaTriggers: {
-          postConfirmation: postConfirmationFn
-        }
+        removalPolicy: RemovalPolicy.DESTROY,
+        // lambdaTriggers: {
+        //   postConfirmation: postConfirmationFn
+        // }
       })
 
       const studentGroup = new cognito.CfnUserPoolGroup(this, "student-group", {

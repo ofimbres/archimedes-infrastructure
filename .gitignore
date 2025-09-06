@@ -8,3 +8,7 @@ test/**/*.d.ts
 test/**/*.js
 cdk.out/
 node_modules/
+
+# Script output directories
+scripts/output/
+scripts/extracted/

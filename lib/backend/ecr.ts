@@ -11,7 +11,7 @@ export class ECR extends Construct {
         this.ecr_repository = new ecr.Repository(this, 'ecr-repository', {
             repositoryName: `${stage}-archimedes-backend-ecr-repository`,
             removalPolicy: cdk.RemovalPolicy.DESTROY,
-            autoDeleteImages: true
+            emptyOnDelete: true
         });
     }
 }
