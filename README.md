@@ -40,13 +40,12 @@ cdk
 
 CREDENTIALS
 
+## Miniquizzes
 
+Upload miniquizzes to S3 (unzips `data/miniquizzes_2026.zip` then syncs):
 
-node scripts/csv-to-json.js 
-node scripts/create-dynamodb-data.js 
-node scripts/seed-data.js 
-
-zip -r miniquizzes.zip miniquizzes -x "__MACOSX/*"
-unzip assets/miniquizzes.zip
+```bash
+./scripts/upload-miniquizzes.sh
+```
 
 https://schoolsdata2-tea-texas.opendata.arcgis.com/
