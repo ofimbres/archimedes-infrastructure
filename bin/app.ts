@@ -2,6 +2,7 @@
 import 'source-map-support/register';
 import * as cdk from 'aws-cdk-lib';
 import { StaticHtmlHostingStack } from '../lib/static-html-hosting-stack';
+import { BackendStack } from '../lib/backend-stack';
 
 const app = new cdk.App();
 
@@ -17,4 +18,16 @@ new StaticHtmlHostingStack(app, 'ArchimedesStaticHtmlStack', {
   // Custom domain configuration (disabled - uncomment when you have a registered domain)
   // domainName: 'your-registered-domain.com',
   // createHostedZone: false,
+});
+
+// Backend: Cognito (Google + custom verification), ECS on EC2, RDS Postgres
+new BackendStack(app, 'ArchimedesBackendStack', {
+  env: {
+    account: process.env.CDK_DEFAULT_ACCOUNT,
+    region: process.env.CDK_DEFAULT_REGION,
+  },
+  description: 'Backend: Cognito, ECS on EC2, RDS Postgres',
+  stage: process.env.STAGE ?? 'dev',
+  googleClientId: process.env.GOOGLE_CLIENT_ID,
+  googleClientSecret: process.env.GOOGLE_CLIENT_SECRET,
 });

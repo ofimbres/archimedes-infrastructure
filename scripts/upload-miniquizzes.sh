@@ -2,6 +2,11 @@
 
 set -e
 
+# Zip to use (default: data/miniquizzes_2026.zip). Pass as first arg to override.
+ZIP_FILE="${1:-./data/miniquizzes_2026.zip}"
+MINIQUIZZES_DIR="./data/miniquizzes"
+STAGING_DIR="./data/miniquizzes_staging"
+
 echo "🔍 Getting S3 bucket name from CDK stack..."
 
 # Get the bucket name from CDK outputs
@@ -17,19 +22,34 @@ fi
 
 echo "📦 Found bucket: $BUCKET_NAME"
 
-# Check if miniquizzes directory exists
-if [ ! -d "./data/miniquizzes" ]; then
-    echo "❌ Error: ./data/miniquizzes directory not found"
+# Unzip if zip file exists; otherwise require existing miniquizzes dir
+if [ -f "$ZIP_FILE" ]; then
+    echo "📂 Unzipping $ZIP_FILE..."
+    rm -rf "$STAGING_DIR" "$MINIQUIZZES_DIR"
+    unzip -o -q "$ZIP_FILE" -d "$STAGING_DIR"
+    # If zip has a single top-level dir (e.g. miniquizzes_2026/), use it as miniquizzes
+    SUBDIRS=("$STAGING_DIR"/*)
+    if [ -d "${SUBDIRS[0]}" ] && [ "${#SUBDIRS[@]}" -eq 1 ]; then
+        mv "${SUBDIRS[0]}" "$MINIQUIZZES_DIR"
+    else
+        mkdir -p "$MINIQUIZZES_DIR"
+        mv "$STAGING_DIR"/* "$MINIQUIZZES_DIR/" 2>/dev/null || true
+    fi
+    rm -rf "$STAGING_DIR"
+    echo "   Extracted to $MINIQUIZZES_DIR"
+elif [ ! -d "$MINIQUIZZES_DIR" ]; then
+    echo "❌ Error: No zip at $ZIP_FILE and ./data/miniquizzes not found."
+    echo "   Usage: $0 [path/to/miniquizzes_2026.zip]"
     exit 1
 fi
 
 # Count files to upload
-FILE_COUNT=$(find ./data/miniquizzes -name "*.html" | wc -l)
+FILE_COUNT=$(find "$MINIQUIZZES_DIR" -name "*.html" | wc -l)
 echo "📁 Found $FILE_COUNT miniquizzes to upload"
 
 # Sync miniquizzes to S3
 echo "⬆️  Uploading miniquizzes to S3..."
-aws s3 sync ./data/miniquizzes s3://$BUCKET_NAME \
+aws s3 sync "$MINIQUIZZES_DIR" s3://$BUCKET_NAME \
     --delete \
     --cache-control "public, max-age=31536000" \
     --content-type "text/html"
