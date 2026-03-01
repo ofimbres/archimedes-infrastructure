@@ -1,4 +1,4 @@
-# Easy Email Setup for Worksheets
+# Easy Email Setup for Miniquizzes
 
 ## Quick Setup (3 ways to configure email)
 
@@ -10,9 +10,9 @@ Add these lines to your HTML `<head>` section:
 ```
 
 ### Method 2: URL Parameters
-Access your worksheet with email in URL:
+Access your miniquiz with email in URL:
 ```
-https://your-domain.com/worksheet.html?email=teacher@school.edu
+https://your-domain.com/miniquiz.html?email=teacher@school.edu
 ```
 
 ### Method 3: Email Input Field
@@ -41,16 +41,16 @@ window.M4UConfig = {
 - ✅ **Smart subjects**: Uses page title if no subject specified  
 - ✅ **Student info**: Includes student name in email subject
 - ✅ **Grade included**: Shows final grade in email
-- ✅ **Full worksheet**: Complete worksheet copy attached
+- ✅ **Full miniquiz**: Complete miniquiz copy attached
 - ✅ **Professional UI**: Clean loading and success messages
 - ✅ **Fallback**: Falls back to postMessage if email fails
 
 ## Email Content
 
 The email will include:
-- **Subject**: "Worksheet: [Page Title] - [Student Name]"
+- **Subject**: "Miniquiz: [Page Title] - [Student Name]"
 - **Grade**: Student's final grade percentage
-- **Worksheet**: Complete copy of answered worksheet
+- **Miniquiz**: Complete copy of answered miniquiz
 - **Timestamp**: When submission was made
 
 ## Browser Compatibility
