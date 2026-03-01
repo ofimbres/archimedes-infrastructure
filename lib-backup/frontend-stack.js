@@ -1,0 +1,15 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.FrontendStack = void 0;
+const aws_cdk_lib_1 = require("aws-cdk-lib");
+const ecr_1 = require("./frontend/ecr");
+const ecs_1 = require("./frontend/ecs");
+class FrontendStack extends aws_cdk_lib_1.Stack {
+    constructor(scope, id, props) {
+        super(scope, id, props);
+        const ecr = new ecr_1.ECR(this, 'ecr', props.stage);
+        const ec2 = new ecs_1.EC2(this, 'ec2', props.stage, ecr);
+    }
+}
+exports.FrontendStack = FrontendStack;
+//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJmaWxlIjoiZnJvbnRlbmQtc3RhY2suanMiLCJzb3VyY2VSb290IjoiIiwic291cmNlcyI6WyJmcm9udGVuZC1zdGFjay50cyJdLCJuYW1lcyI6W10sIm1hcHBpbmdzIjoiOzs7QUFDQSw2Q0FBZ0Q7QUFFaEQsd0NBQXFDO0FBQ3JDLHdDQUFxQztBQU1yQyxNQUFhLGFBQWMsU0FBUSxtQkFBSztJQUN0QyxZQUFZLEtBQWdCLEVBQUUsRUFBVSxFQUFFLEtBQXlCO1FBQ2pFLEtBQUssQ0FBQyxLQUFLLEVBQUUsRUFBRSxFQUFFLEtBQUssQ0FBQyxDQUFBO1FBRXZCLE1BQU0sR0FBRyxHQUFHLElBQUksU0FBRyxDQUFDLElBQUksRUFBRSxLQUFLLEVBQUUsS0FBSyxDQUFDLEtBQUssQ0FBQyxDQUFDO1FBQzlDLE1BQU0sR0FBRyxHQUFHLElBQUksU0FBRyxDQUFDLElBQUksRUFBRSxLQUFLLEVBQUUsS0FBSyxDQUFDLEtBQUssRUFBRSxHQUFHLENBQUMsQ0FBQztJQUNyRCxDQUFDO0NBQ0Y7QUFQRCxzQ0FPQyIsInNvdXJjZXNDb250ZW50IjpbImltcG9ydCAqIGFzIGNkayBmcm9tICdhd3MtY2RrLWxpYic7XG5pbXBvcnQgeyBTdGFjaywgU3RhY2tQcm9wcyB9IGZyb20gJ2F3cy1jZGstbGliJztcbmltcG9ydCB7IENvbnN0cnVjdCB9IGZyb20gJ2NvbnN0cnVjdHMnO1xuaW1wb3J0IHsgRUNSIH0gZnJvbSAnLi9mcm9udGVuZC9lY3InO1xuaW1wb3J0IHsgRUMyIH0gZnJvbSAnLi9mcm9udGVuZC9lY3MnO1xuXG5leHBvcnQgaW50ZXJmYWNlIEZyb250ZW5kU3RhY2tQcm9wcyBleHRlbmRzIFN0YWNrUHJvcHMge1xuICBzdGFnZTogc3RyaW5nO1xufVxuXG5leHBvcnQgY2xhc3MgRnJvbnRlbmRTdGFjayBleHRlbmRzIFN0YWNrIHtcbiAgY29uc3RydWN0b3Ioc2NvcGU6IENvbnN0cnVjdCwgaWQ6IHN0cmluZywgcHJvcHM6IEZyb250ZW5kU3RhY2tQcm9wcykge1xuICAgIHN1cGVyKHNjb3BlLCBpZCwgcHJvcHMpXG5cbiAgICBjb25zdCBlY3IgPSBuZXcgRUNSKHRoaXMsICdlY3InLCBwcm9wcy5zdGFnZSk7XG4gICAgY29uc3QgZWMyID0gbmV3IEVDMih0aGlzLCAnZWMyJywgcHJvcHMuc3RhZ2UsIGVjcik7XG4gIH1cbn0iXX0=

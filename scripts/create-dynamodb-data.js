@@ -27,10 +27,10 @@ function createSchools(finalData) {
         'principalName': { 'S': data['USER_School_Principal'] || '' },
         'contactEmail': { 'S': data['USER_School_Email_Address'] || '' },
         'phoneNumber': { 'S': data['USER_School_Phone'] || '' },
-        'parentEntityKey': { 'S': 'SCHOOL' },
-        'childEntityKey': { 'S': `SCHOOL#${data['USER_School_Number']}` },
-        'searchTypeKey': { 'S': 'SCHOOL_CODE' },
-        'searchValueKey': { 'S': schoolCode }
+        'gsi1pk': { 'S': 'SCHOOL' },
+        'gsi1sk': { 'S': `SCHOOL#${data['USER_School_Number']}` },
+        'gsi2pk': { 'S': 'SCHOOL_CODE' },
+        'gsi2sk': { 'S': schoolCode }
       }
 
     request = { PutRequest: { Item: item } };
@@ -56,10 +56,10 @@ function createMiniQuizzExercisesData(finalData) {
       'exerciseType': { 'S': 'Miniquiz' },
       'path': { 'S': `${data['ACTIVITY_ID']}.htm` },
       'difficulty': { 'S': 'BEGINNER' },
-      'parentEntityKey': { 'S': `TOPIC#${topic_upper}#SUBTOPIC#${subtopic_upper}` },
-      'childEntityKey': { 'S': `EXERCISE#${data['ACTIVITY_ID']}` },
-      'searchTypeKey': { 'S': 'EXERCISE_TYPE' },
-      'searchValueKey': { 'S': `Miniquiz#${data['ACTIVITY_ID']}` }
+      'gsi1pk': { 'S': `TOPIC#${topic_upper}#SUBTOPIC#${subtopic_upper}` },
+      'gsi1sk': { 'S': `EXERCISE#${data['ACTIVITY_ID']}` },
+      'gsi2pk': { 'S': 'EXERCISE_TYPE' },
+      'gsi2sk': { 'S': `Miniquiz#${data['ACTIVITY_ID']}` }
     }
 
     request = { PutRequest: { Item: item } };
@@ -88,10 +88,10 @@ function createTopics(finalData) {
       'parentTopicId': { 'NULL': true },
       'path': { 'S': data['TOPIC'] },
       'level': { 'N': '1' },
-      'parentEntityKey': { 'S': 'TOPIC' },
-      'childEntityKey': { 'S': `TOPIC#${topic_upper}` },
-      'searchTypeKey': { 'S': 'ROOT_TOPIC' },
-      'searchValueKey': { 'S': `TOPIC#${topic_upper}` }
+      'gsi1pk': { 'S': 'TOPIC' },
+      'gsi1sk': { 'S': `TOPIC#${topic_upper}` },
+      'gsi2pk': { 'S': 'ROOT_TOPIC' },
+      'gsi2sk': { 'S': `TOPIC#${topic_upper}` }
     }
 
     request = { PutRequest: { Item: item } };
@@ -118,10 +118,8 @@ function createSubtopics(finalData) {
       'parentTopicId': { 'S': topic_upper },
       'path': { 'S': `${data['TOPIC']} > ${data['SUBTOPIC']}` },
       'level': { 'N': '2' },
-      'parentEntityKey': { 'S': `TOPIC#${topic_upper}` },
-      'childEntityKey': { 'S': `SUBTOPIC#${subtopic_upper}` },
-      'searchTypeKey': { 'NULL': true },
-      'searchValueKey': { 'NULL': true }
+      'gsi1pk': { 'S': `TOPIC#${topic_upper}` },
+      'gsi1sk': { 'S': `SUBTOPIC#${subtopic_upper}` }
     }
 
     request = { PutRequest: { Item: item } };

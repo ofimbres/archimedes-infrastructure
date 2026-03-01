@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Math Worksheet - Algebra 1</title>
+    
+    <!-- Easy Email Setup: Just add teacher's email here -->
+    <meta name="teacher-email" content="teacher@school.edu">
+    <meta name="subject" content="Algebra Homework - Week 5">
+    
+    <!-- Include the worksheet JavaScript -->
+    <script type="text/javascript" src="webworksheet.js"></script>
+    <script type="text/javascript" src="webworksheetUpdate.js"></script>
+    <script type="text/javascript" src="m4u_extended.js"></script>
+</head>
+<body>
+    <h1>Algebra 1 - Linear Equations</h1>
+    
+    <!-- Your worksheet content goes here -->
+    <div>
+        <p>Student Name: <span data-name-field>Student</span></p>
+        <p>Student ID: <span data-id-field>12345</span></p>
+        <p>Grade: <span data-grade-field data-cval="0">0%</span></p>
+    </div>
+    
+    <!-- The submit button -->
+    <button onclick="submitForm()">Submit Worksheet</button>
+    
+    <script>
+        // Optional: Override default settings if needed
+        // window.M4UConfig.email.to = "override@teacher.com";
+        // window.M4UConfig.submissionMethod = "postMessage"; // Switch back to postMessage if needed
+    </script>
+</body>
+</html>

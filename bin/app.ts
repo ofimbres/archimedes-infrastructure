@@ -1,40 +1,19 @@
 #!/usr/bin/env node
-import 'source-map-support/register'
-import * as cdk from 'aws-cdk-lib'
-import { BackendStack } from '../lib/backend-stack'
-import { FrontendStack } from '../lib/frontend-stack'
-import { VpcStack } from '../lib/vpc-stack'
+import 'source-map-support/register';
+import * as cdk from 'aws-cdk-lib';
+import { StaticHtmlHostingStack } from '../lib/static-html-hosting-stack';
 
 const app = new cdk.App();
 
-new VpcStack(app, 'vpc-stack', {
-  stackName: 'ArchimedesVpcStack',
-  stage: 'dev'
-});
-new BackendStack(app, 'backend-stack', {
-  stackName: 'ArchimedesBackendStack',
-  stage: 'dev',
-
-  /* If you don't specify 'env', this stack will be environment-agnostic.
-   * Account/Region-dependent features and context lookups will not work,
-   * but a single synthesized template can be deployed anywhere. */
-
-  /* Uncomment the next line to specialize this stack for the AWS Account
-   * and Region that are implied by the current CLI configuration. */
-  // env: { account: process.env.CDK_DEFAULT_ACCOUNT, region: process.env.CDK_DEFAULT_REGION },
-
+// Static HTML hosting for miniquizzes and other content
+new StaticHtmlHostingStack(app, 'ArchimedesStaticHtmlStack', {
   env: {
     account: process.env.CDK_DEFAULT_ACCOUNT,
     region: process.env.CDK_DEFAULT_REGION,
   },
-
-  /* For more information, see https://docs.aws.amazon.com/cdk/latest/guide/environments.html */
-});
-new FrontendStack(app, 'frontend-stack', {
-  stackName: 'ArchimedesFrontendStack',
-  stage: 'dev',
-  env: {
-    account: process.env.CDK_DEFAULT_ACCOUNT,
-    region: process.env.CDK_DEFAULT_REGION,
-  }
+  description: 'Static HTML hosting with S3 and CloudFront for Archimedes miniquizzes',
+  
+  // Custom domain configuration (disabled - uncomment when you have a registered domain)
+  // domainName: 'your-registered-domain.com',
+  // createHostedZone: false,
 });
