@@ -51,7 +51,7 @@ const USE_CUSTOM_DOMAIN = false;
 ## Setup Steps
 
 ### 1. Update Configuration
-Edit [bin/app.ts](bin/app.ts) and set your domain preferences:
+Edit [bin/app.ts](../bin/app.ts) and set your domain preferences:
 
 ```typescript
 const CUSTOM_DOMAIN = 'your-actual-domain.com';

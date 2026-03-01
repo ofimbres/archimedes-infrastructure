@@ -6,11 +6,18 @@ import * as s3deploy from 'aws-cdk-lib/aws-s3-deployment';
 import * as route53 from 'aws-cdk-lib/aws-route53';
 import * as route53Targets from 'aws-cdk-lib/aws-route53-targets';
 import * as acm from 'aws-cdk-lib/aws-certificatemanager';
+import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import { Construct } from 'constructs';
 
 export interface StaticHtmlHostingStackProps extends cdk.StackProps {
   domainName?: string;
   createHostedZone?: boolean;
+  /**
+   * PEM-encoded RSA public key for CloudFront signed URLs (paid/sensitive content).
+   * When set, distribution requires signed URLs; backend uses the private key to sign.
+   * Get from env or context, e.g. process.env.CLOUDFRONT_SIGNING_PUBLIC_KEY
+   */
+  signingPublicKeyPem?: string;
 }
 
 export class StaticHtmlHostingStack extends cdk.Stack {
@@ -19,12 +26,17 @@ export class StaticHtmlHostingStack extends cdk.Stack {
   public readonly domainName: string;
   public readonly hostedZone?: route53.HostedZone;
   public readonly certificate?: acm.Certificate;
+  /** Key Pair ID for signed URLs (when signingPublicKeyPem is set). Backend needs this to sign. */
+  public readonly signingKeyPairId?: string;
+  /** Secrets Manager secret for the signing private key (when signed URLs enabled). Replace placeholder with your PEM. */
+  public readonly signingPrivateKeySecret?: secretsmanager.ISecret;
 
   constructor(scope: Construct, id: string, props?: StaticHtmlHostingStackProps) {
     super(scope, id, props);
 
     const customDomainName = props?.domainName;
     const createHostedZone = props?.createHostedZone;
+    const signingPublicKeyPem = props?.signingPublicKeyPem;
 
     // Create hosted zone if requested
     if (customDomainName && createHostedZone) {
@@ -55,6 +67,29 @@ export class StaticHtmlHostingStack extends cdk.Stack {
       description: 'OAC for miniquizzes',
     });
 
+    // Secret for the signing private key — always created so you can set the value before enabling signed URLs (see docs/SIGNED_URLS_SETUP.md)
+    this.signingPrivateKeySecret = new secretsmanager.Secret(this, 'SigningPrivateKeySecret', {
+      secretName: `archimedes/cloudfront-signing-private-key`,
+      description: 'CloudFront signing private key PEM for miniquiz signed URLs. Replace the value with your private key (see docs/SIGNED_URLS_SETUP.md).',
+      secretStringValue: cdk.SecretValue.unsafePlainText(
+        'REPLACE_IN_AWS_CONSOLE: Paste your CloudFront signing private key PEM here (see docs/SIGNED_URLS_SETUP.md)'
+      ),
+    });
+
+    // Signed URLs: when public key is provided, only signed URLs can access content (for paid/sensitive worksheets)
+    let keyGroup: cloudfront.KeyGroup | undefined;
+    if (signingPublicKeyPem) {
+      const publicKey = new cloudfront.PublicKey(this, 'SigningKey', {
+        encodedKey: signingPublicKeyPem,
+        comment: 'Public key for miniquiz signed URLs',
+      });
+      this.signingKeyPairId = publicKey.publicKeyId;
+      keyGroup = new cloudfront.KeyGroup(this, 'SigningKeyGroup', {
+        items: [publicKey],
+        comment: 'Key group for miniquiz signed URLs',
+      });
+    }
+
     // CloudFront Distribution
     this.distribution = new cloudfront.Distribution(this, 'MiniquizzesDistribution', {
       defaultRootObject: 'index.html',
@@ -66,6 +101,7 @@ export class StaticHtmlHostingStack extends cdk.Stack {
         allowedMethods: cloudfront.AllowedMethods.ALLOW_GET_HEAD,
         cachePolicy: cloudfront.CachePolicy.CACHING_OPTIMIZED,
         compress: true,
+        ...(keyGroup && { trustedKeyGroups: [keyGroup] }),
       },
       priceClass: cloudfront.PriceClass.PRICE_CLASS_100,
       comment: 'Archimedes Miniquizzes Distribution',
@@ -102,6 +138,20 @@ export class StaticHtmlHostingStack extends cdk.Stack {
       value: this.bucket.bucketName,
       description: 'S3 Bucket name for miniquizzes',
     });
+
+    if (this.signingKeyPairId) {
+      new cdk.CfnOutput(this, 'SigningKeyPairId', {
+        value: this.signingKeyPairId,
+        description: 'CloudFront Key Pair ID for signed URLs (use in backend with private key)',
+      });
+    }
+
+    if (this.signingPrivateKeySecret) {
+      new cdk.CfnOutput(this, 'SigningPrivateKeySecretArn', {
+        value: this.signingPrivateKeySecret.secretArn,
+        description: 'Secrets Manager ARN for signing private key — set CLOUDFRONT_SIGNING_PRIVATE_KEY_SECRET_ID to this in backend',
+      });
+    }
 
     // Output hosted zone info if created
     if (this.hostedZone) {

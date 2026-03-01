@@ -12,3 +12,6 @@ node_modules/
 # Script output directories
 scripts/output/
 scripts/extracted/
+
+# CloudFront signing keys (never commit)
+*.pem
