@@ -15,3 +15,6 @@ scripts/extracted/
 
 # CloudFront signing keys (never commit)
 *.pem
+
+# Google OAuth client secret (never commit)
+client_secret_*.json

@@ -4,7 +4,7 @@ This doc describes what **archimedes-infra** exposes to **archimedes-backend**. 
 
 **In archimedes-backend:** you can add `docs/INFRA_CONTRACT.md` with a single line: *"Env vars and stack outputs we expect from infra: see archimedes-infra repo `docs/BACKEND_CONTRACT.md`."* Then @-mention that file in Cursor when doing cross-repo work.
 
-**Stacks:** `ArchimedesBackendStack`, `ArchimedesStaticHtmlStack` (miniquizzes + optional signed URLs).
+**Stacks:** `ArchimedesBackendStack`, `ArchimedesFrontendStack` (app UI), `ArchimedesStaticHtmlStack` (miniquizzes + optional signed URLs).
 
 ---
 
@@ -56,14 +56,30 @@ See [SIGNED_URLS_SETUP.md](./SIGNED_URLS_SETUP.md) for key setup and deploy step
 
 ---
 
-## 3. ECR and deployment
+## 3. App frontend stack (ArchimedesFrontendStack)
+
+S3 + CloudFront for the app UI (HTML, JS, CSS). The frontend calls the **backend ALB** directly; the backend must allow **CORS** from the frontend origin (FrontendUrl below). Cognito callback and logout URLs include the frontend URL so auth redirects work.
+
+| Output name | Description | Frontend / usage |
+|-------------|-------------|------------------|
+| **FrontendUrl** | CloudFront URL (e.g. `https://d123.cloudfront.net`) | App URL; use as Cognito callback base (already wired in BackendStack). Backend CORS must allow this origin. |
+| **FrontendBucketName** | S3 bucket for frontend assets | Deploy built app: `aws s3 sync dist/ s3://<bucket>/` then invalidate CloudFront cache if needed. |
+| **DistributionId** | CloudFront distribution ID | Cache invalidation: `aws cloudfront create-invalidation --distribution-id <id> --paths "/*"` |
+
+**Frontend auth (Cognito):** The frontend needs Backend stack outputs to initiate sign-in and request tokens: **UserPoolId**, **UserPoolClientId**, **CognitoDomain**. Inject at build time (e.g. `VITE_COGNITO_USER_POOL_ID`) or serve a small config from the backend. Callback URL for the Hosted UI is `https://<FrontendUrl>/callback` (and root); these are already registered via BackendStack `additionalCallbackUrls` / `additionalLogoutUrls`.
+
+**Backend CORS:** Backend app must send `Access-Control-Allow-Origin: <FrontendUrl>` (or the specific CloudFront origin) and handle preflight for API requests from the browser.
+
+---
+
+## 4. ECR and deployment
 
 - **Image:** Push the backend Docker image to the URI from **BackendRepositoryUri**.
 - **Task definition:** The backend stack’s ECS task definition currently uses a placeholder image; your CI or deploy process should update the task definition to use the new image and inject the env vars above (from stack outputs or Parameter Store).
 
 ---
 
-## 4. Quick reference: env vars the backend can expect
+## 5. Quick reference: env vars the backend can expect
 
 | Env var | Source stack | Output / note |
 |---------|----------------|----------------|

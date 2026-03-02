@@ -24,6 +24,14 @@ export interface BackendStackProps extends cdk.StackProps {
    * Google OAuth client secret. Prefer passing via env and not committing.
    */
   googleClientSecret?: string;
+  /**
+   * Additional Cognito callback URLs (e.g. frontend CloudFront URL for auth redirects).
+   */
+  additionalCallbackUrls?: string[];
+  /**
+   * Additional Cognito logout URLs (e.g. frontend CloudFront URL).
+   */
+  additionalLogoutUrls?: string[];
 }
 
 /**
@@ -49,6 +57,10 @@ export class BackendStack extends cdk.Stack {
     const stage = props?.stage ?? 'dev';
     const googleClientId = props?.googleClientId ?? process.env.GOOGLE_CLIENT_ID;
     const googleClientSecret = props?.googleClientSecret ?? process.env.GOOGLE_CLIENT_SECRET;
+    const baseCallbackUrls = ['http://localhost:3000/callback', 'https://localhost:3000/callback'];
+    const baseLogoutUrls = ['http://localhost:3000', 'https://localhost:3000'];
+    const callbackUrls = [...baseCallbackUrls, ...(props?.additionalCallbackUrls ?? [])];
+    const logoutUrls = [...baseLogoutUrls, ...(props?.additionalLogoutUrls ?? [])];
 
     // --- VPC (free; no NAT Gateway to avoid ~$32/mo) ---
     const vpc = new ec2.Vpc(this, 'Vpc', {
@@ -144,11 +156,8 @@ exports.handler = async (event) => {
         ? {
             flows: { authorizationCodeGrant: true },
             scopes: [cognito.OAuthScope.OPENID, cognito.OAuthScope.EMAIL, cognito.OAuthScope.PROFILE],
-            callbackUrls: [
-              'http://localhost:3000/callback',
-              'https://localhost:3000/callback',
-            ],
-            logoutUrls: ['http://localhost:3000', 'https://localhost:3000'],
+            callbackUrls,
+            logoutUrls,
           }
         : undefined,
       generateSecret: false,
