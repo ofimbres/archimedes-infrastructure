@@ -57,7 +57,7 @@ export class BackendStack extends cdk.Stack {
     const stage = props?.stage ?? 'dev';
     const googleClientId = props?.googleClientId ?? process.env.GOOGLE_CLIENT_ID;
     const googleClientSecret = props?.googleClientSecret ?? process.env.GOOGLE_CLIENT_SECRET;
-    const baseCallbackUrls = ['http://localhost:3000/callback', 'https://localhost:3000/callback'];
+    const baseCallbackUrls = ['http://localhost:8001/api/v1/auth/callback', 'https://localhost:8001/api/v1/auth/callback'];
     const baseLogoutUrls = ['http://localhost:3000', 'https://localhost:3000'];
     const callbackUrls = [...baseCallbackUrls, ...(props?.additionalCallbackUrls ?? [])];
     const logoutUrls = [...baseLogoutUrls, ...(props?.additionalLogoutUrls ?? [])];

@@ -1,0 +1,72 @@
+<!-- Example: Email Submission Configuration -->
+<script>
+window.M4UConfig = {
+    submissionMethod: 'email',
+    email: {
+        to: 'teacher@school.edu',
+        subject: 'Student Worksheet Submission - Math Quiz',
+        body: 'Hello Teacher,\n\nPlease find the student worksheet results below:'
+    },
+    ui: {
+        loadingTitle: 'Preparing Email',
+        loadingMessage: 'Setting up your submission email...',
+        successTitle: 'Email Ready!',
+        successMessage: 'Your email client will open to send the results.',
+        successSubtext: 'Please review and send the email.'
+    },
+    additionalData: {
+        studentClass: 'Math 101',
+        assignment: 'Weekly Quiz #3'
+    }
+};
+</script>
+<script src="m4u_extended.js"></script>
+
+<!-- Example: Webhook/API Submission -->
+<script>
+window.M4UConfig = {
+    submissionMethod: 'webhook',
+    webhook: {
+        url: 'https://your-api.com/submissions',
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer your-api-key'
+        }
+    },
+    onSuccess: function(data) {
+        console.log('Submission successful:', data);
+        // Custom success handling
+    },
+    onError: function(error, data) {
+        console.error('Submission failed:', error);
+        // Custom error handling
+    }
+};
+</script>
+
+<!-- Example: Local Storage (for offline work) -->
+<script>
+window.M4UConfig = {
+    submissionMethod: 'localStorage',
+    ui: {
+        loadingTitle: 'Saving Locally',
+        successMessage: 'Your work has been saved to this browser.',
+        successSubtext: 'Data will persist until you clear browser storage.'
+    }
+};
+</script>
+
+<!-- Example: Custom Theme Colors -->
+<script>
+window.M4UConfig = {
+    submissionMethod: 'postMessage',
+    ui: {
+        primaryColor: '#9b59b6',    // Purple
+        successColor: '#2ecc71',    // Green
+        errorColor: '#e67e22',      // Orange
+        loadingTitle: 'Processing...',
+        successTitle: 'Well Done!'
+    }
+};
+</script>

@@ -97,7 +97,7 @@ export class StaticHtmlHostingStack extends cdk.Stack {
         origin: origins.S3BucketOrigin.withOriginAccessControl(this.bucket, {
           originAccessControl,
         }),
-        viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+        viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.ALLOW_ALL,
         allowedMethods: cloudfront.AllowedMethods.ALLOW_GET_HEAD,
         cachePolicy: cloudfront.CachePolicy.CACHING_OPTIMIZED,
         compress: true,
@@ -131,6 +131,11 @@ export class StaticHtmlHostingStack extends cdk.Stack {
     new cdk.CfnOutput(this, 'CloudFrontUrl', {
       value: `https://${this.distribution.distributionDomainName}`,
       description: 'CloudFront Distribution URL for miniquizzes',
+    });
+
+    new cdk.CfnOutput(this, 'DistributionId', {
+      value: this.distribution.distributionId,
+      description: 'CloudFront Distribution ID (for cache invalidation)',
     });
 
     // Output the S3 bucket name
