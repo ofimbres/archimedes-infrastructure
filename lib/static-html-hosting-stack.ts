@@ -67,12 +67,12 @@ export class StaticHtmlHostingStack extends cdk.Stack {
       description: 'OAC for miniquizzes',
     });
 
-    // Secret for the signing private key — always created so you can set the value before enabling signed URLs (see docs/SIGNED_URLS_SETUP.md)
+    // Secret for the signing private key — always created so you can set the value before enabling signed URLs (see docs/shared/runbooks/signed-urls-setup.md)
     this.signingPrivateKeySecret = new secretsmanager.Secret(this, 'SigningPrivateKeySecret', {
       secretName: `archimedes/cloudfront-signing-private-key`,
-      description: 'CloudFront signing private key PEM for miniquiz signed URLs. Replace the value with your private key (see docs/SIGNED_URLS_SETUP.md).',
+      description: 'CloudFront signing private key PEM for miniquiz signed URLs. Replace the value with your private key (see docs/shared/runbooks/signed-urls-setup.md).',
       secretStringValue: cdk.SecretValue.unsafePlainText(
-        'REPLACE_IN_AWS_CONSOLE: Paste your CloudFront signing private key PEM here (see docs/SIGNED_URLS_SETUP.md)'
+        'REPLACE_IN_AWS_CONSOLE: Paste your CloudFront signing private key PEM here (see docs/shared/runbooks/signed-urls-setup.md)'
       ),
     });
 
