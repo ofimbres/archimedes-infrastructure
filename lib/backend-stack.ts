@@ -247,8 +247,9 @@ exports.handler = async (event) => {
     });
     this.cluster.addAsgCapacityProvider(capacityProvider);
 
+    // BRIDGE: outbound uses the EC2 host's public IP (no NAT). EC2 launch type does not support assignPublicIp on awsvpc tasks.
     const taskDefinition = new ecs.Ec2TaskDefinition(this, 'BackendTask', {
-      networkMode: ecs.NetworkMode.AWS_VPC,
+      networkMode: ecs.NetworkMode.BRIDGE,
     });
 
     const logDriver = new ecs.AwsLogDriver({
@@ -261,7 +262,7 @@ exports.handler = async (event) => {
       containerName: 'backend',
       cpu: 256,
       memoryLimitMiB: 256,
-      portMappings: [{ containerPort: 80 }],
+      portMappings: [{ containerPort: 80, hostPort: 80, protocol: ecs.Protocol.TCP }],
       logging: logDriver,
       healthCheck: {
         command: ['CMD-SHELL', 'curl -f http://localhost/ || exit 1'],
@@ -291,7 +292,7 @@ exports.handler = async (event) => {
       vpc,
       port: 80,
       protocol: elbv2.ApplicationProtocol.HTTP,
-      targetType: elbv2.TargetType.IP,
+      targetType: elbv2.TargetType.INSTANCE,
       healthCheck: {
         path: '/',
         interval: cdk.Duration.seconds(30),

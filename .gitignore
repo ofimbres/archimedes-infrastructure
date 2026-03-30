@@ -18,3 +18,5 @@ scripts/extracted/
 
 # Google OAuth client secret (never commit)
 client_secret_*.json
+# Generated from shared/signed-url.ts
+shared/signed-url.d.ts

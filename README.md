@@ -1,17 +1,32 @@
-# Welcome to your CDK TypeScript project!
+# archimedes-infrastructure
 
-This is a blank project for TypeScript development with CDK.
+AWS CDK app for Archimedes: **ArchimedesBackendStack** (Cognito, ECS on EC2, RDS, ALB, ECR), **ArchimedesFrontendStack** (S3 + CloudFront), and **ArchimedesStaticHtmlStack** (miniquiz static hosting). Product and env-var contracts live in the [`docs/shared`](docs/shared) submodule (see `runbooks/aws-dev-deployment.md` and `contracts/backend-contract.md`).
 
-The `cdk.json` file tells the CDK Toolkit how to execute your app.
+## Deploy the backend stack
+
+1. Configure AWS credentials and default region (`AWS_PROFILE`, `AWS_REGION` or `CDK_DEFAULT_REGION`).
+2. Bootstrap once per account/region if needed: `npx cdk bootstrap`.
+3. Optional Google sign-in: export `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` before deploy (Cognito Google IdP is only created when both are set).
+4. From this directory:
+
+```bash
+npm install
+npm run build
+npx cdk deploy ArchimedesBackendStack
+```
+
+CDK deploys **ArchimedesFrontendStack** first (backend Cognito callback URLs use the frontend CloudFront URL). To deploy everything: `npx cdk deploy --all`.
+
+Stack outputs (`UserPoolId`, `BackendUrl`, `DbSecretArn`, `BackendRepositoryUri`, etc.) map to backend runtime env as documented in `docs/shared/contracts/backend-contract.md`.
 
 ## Useful commands
 
- * `npm run build`   compile typescript to js
- * `npm run watch`   watch for changes and compile
- * `npm run test`    perform the jest unit tests
- * `cdk deploy`      deploy this stack to your default AWS account/region
- * `cdk diff`        compare deployed stack with current state
- * `cdk synth`       emits the synthesized CloudFormation template
+- `npm run build` — compile TypeScript
+- `npm run watch` — watch and compile
+- `npm run test` — Jest tests
+- `npx cdk deploy` — deploy (see stacks in `bin/app.ts`)
+- `npx cdk diff` — compare with deployed state
+- `npx cdk synth` — emit CloudFormation templates
 
 https://aws.amazon.com/blogs/developer/recommended-aws-cdk-project-structure-for-python-applications/
 
