@@ -177,7 +177,7 @@ CREATE TABLE activities (
     subtopic_id UUID NOT NULL REFERENCES subtopics (id) ON DELETE RESTRICT,
     description VARCHAR(500),
     activity_type VARCHAR(50) NOT NULL DEFAULT 'miniquiz',
-    created_at TIMESTAMPTZ DEFAULT NOW()
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE INDEX idx_activities_subtopic ON activities (subtopic_id);

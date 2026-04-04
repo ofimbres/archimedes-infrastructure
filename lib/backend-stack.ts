@@ -9,6 +9,7 @@ import * as elbv2 from 'aws-cdk-lib/aws-elasticloadbalancingv2';
 import * as logs from 'aws-cdk-lib/aws-logs';
 import * as autoscaling from 'aws-cdk-lib/aws-autoscaling';
 import * as rds from 'aws-cdk-lib/aws-rds';
+import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import { Construct } from 'constructs';
 
 export interface BackendStackProps extends cdk.StackProps {
@@ -240,6 +241,9 @@ exports.handler = async (event) => {
     }
 
     // --- RDS Postgres (cheap: db.t4g.micro, ~$12–15/mo) ---
+    // RDS-managed master credentials in Secrets Manager (console: "Managed in AWS Secrets Manager").
+    // CDK's fromGeneratedSecret() creates a separate Secret + SecretTargetAttachment; we use a throwaway
+    // fromPassword so no CDK secret is created, then L1 overrides enable native ManageMasterUserPassword.
     this.database = new rds.DatabaseInstance(this, 'Database', {
       engine: rds.DatabaseInstanceEngine.postgres({
         version: rds.PostgresEngineVersion.VER_15,
@@ -249,12 +253,47 @@ exports.handler = async (event) => {
       vpcSubnets: { subnetType: ec2.SubnetType.PUBLIC },
       securityGroups: [dbSg],
       databaseName: 'archimedes',
-      credentials: rds.Credentials.fromGeneratedSecret('postgres'),
+      credentials: rds.Credentials.fromPassword(
+        'postgres',
+        cdk.SecretValue.unsafePlainText('unused-cdk-placeholder-not-deployed'),
+      ),
       iamAuthentication: true,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
       allocatedStorage: 20,
       publiclyAccessible: false, // Backend in same VPC can reach it; no direct internet
     });
+
+    const cfnDatabase = this.database.node.defaultChild as rds.CfnDBInstance;
+    cfnDatabase.addPropertyDeletionOverride('MasterUserPassword');
+    cfnDatabase.manageMasterUserPassword = true;
+
+    const dbMasterSecret = secretsmanager.Secret.fromSecretCompleteArn(
+      this,
+      'DatabaseMasterUserSecret',
+      cfnDatabase.attrMasterUserSecretSecretArn,
+    );
+
+    // Bastion: Secrets Manager (optional password bootstrap) + IAM DB auth token (required after GRANT rds_iam TO postgres).
+    if (ssmBastion) {
+      dbMasterSecret.grantRead(ssmBastion.role);
+      this.database.grantConnect(ssmBastion.role, 'postgres');
+      ssmBastion.role.addToPrincipalPolicy(
+        new iam.PolicyStatement({
+          effect: iam.Effect.ALLOW,
+          actions: ['cloudformation:DescribeStacks'],
+          resources: [
+            cdk.Arn.format({
+              partition: 'aws',
+              service: 'cloudformation',
+              region: this.region,
+              account: this.account,
+              resource: 'stack',
+              resourceName: `${this.stackName}/*`,
+            }),
+          ],
+        }),
+      );
+    }
 
     // --- ECS on EC2 (cheaper than Fargate: ~$6–7/mo for one t4g.micro) ---
     this.cluster = new ecs.Cluster(this, 'Cluster', {
@@ -308,7 +347,7 @@ exports.handler = async (event) => {
       : ecs.ContainerImage.fromEcrRepository(this.backendRepository, 'latest');
 
     // ALB → EC2 host :80 → container (nginx 80 or app e.g. 8081). Do not force the app to use privileged port 80 in-container.
-    const dbSecret = this.database.secret;
+    const dbSecret = dbMasterSecret;
     const container = taskDefinition.addContainer('Backend', {
       image: containerImage,
       containerName: 'backend',
@@ -391,7 +430,7 @@ exports.handler = async (event) => {
     backendSg.connections.allowFrom(this.loadBalancer, ec2.Port.tcp(80), 'ALB to backend');
 
     if (dbSecret) {
-      this.database.grantConnect(taskDefinition.taskRole);
+      this.database.grantConnect(taskDefinition.taskRole, 'postgres');
     }
 
     // --- Outputs ---
@@ -416,8 +455,9 @@ exports.handler = async (event) => {
       description: 'Backend ALB URL (replace with your image and add HTTPS in production)',
     });
     new cdk.CfnOutput(this, 'DbSecretArn', {
-      value: this.database.secret!.secretArn,
-      description: 'Secrets Manager ARN for RDS master user (admin / bootstrap); ECS only injects username as DB_IAM_USER',
+      value: dbMasterSecret.secretArn,
+      description:
+        'Secrets Manager ARN for RDS-managed master user secret (password lifecycle managed by RDS); ECS only injects username as DB_IAM_USER',
     });
     new cdk.CfnOutput(this, 'DbEndpoint', {
       value: this.database.dbInstanceEndpointAddress,
@@ -426,7 +466,7 @@ exports.handler = async (event) => {
     new cdk.CfnOutput(this, 'DbIamAuthBootstrapSql', {
       value: 'GRANT rds_iam TO postgres;',
       description:
-        'Run once as master via psql (after first deploy): enables IAM tokens for the postgres user matching DB_IAM_USER',
+        'Run once via psql with password auth (before this grant). Afterward postgres cannot use the Secrets Manager password; use IAM auth (scripts/psql-from-db-secret.sh --iam on bastion).',
     });
     if (ssmBastion) {
       new cdk.CfnOutput(this, 'SsmBastionInstanceId', {

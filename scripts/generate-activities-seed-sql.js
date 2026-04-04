@@ -213,9 +213,10 @@ function main() {
     }
 
     const sid = subtopicUuid(t, s);
+    // created_at: set on insert (NOT NULL-safe if DB has no column default). On conflict, leave timestamp unchanged.
     lines.push(
-      `INSERT INTO activities (activity_id, subtopic_id, description, activity_type) VALUES ` +
-        `(${sqlStr(aid)}, ${sqlStr(sid)}, ${sqlStr(desc)}, 'miniquiz') ` +
+      `INSERT INTO activities (activity_id, subtopic_id, description, activity_type, created_at) VALUES ` +
+        `(${sqlStr(aid)}, ${sqlStr(sid)}, ${sqlStr(desc)}, 'miniquiz', NOW()) ` +
         `ON CONFLICT (activity_id) DO UPDATE SET ` +
         `subtopic_id = EXCLUDED.subtopic_id, description = EXCLUDED.description, ` +
         `activity_type = EXCLUDED.activity_type;`
