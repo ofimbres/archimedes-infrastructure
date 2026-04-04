@@ -181,6 +181,8 @@ git submodule update --init --recursive
 
 Use **`--iam`** and target the app database (**`-d archimedes`**). Each invocation of **`scripts/psql-from-db-secret.sh`** builds a **new** IAM auth token (~15 minute lifetime).
 
+**Important:** Seeds assume tables from **`archimedes-schema.sql`** already exist, and you use the **same** **`-d`** for every step. **`activities.sql` inserts only `activities` rows**; it does **not** create topics/subtopics. Run **`db/seeds/topics.sql`** before **`activities.sql`**, or inserts will fail (FK / guard in the file).
+
 ```bash
 chmod +x scripts/psql-from-db-secret.sh
 cd ~/archimedes-infrastructure   # or wherever you cloned
@@ -191,14 +193,14 @@ cd ~/archimedes-infrastructure   # or wherever you cloned
 # 2) Seeds (idempotent upserts — safe to re-run)
 ./scripts/psql-from-db-secret.sh --iam -v ON_ERROR_STOP=1 -d archimedes -f db/seeds/schools.sql
 
-# 3) Topics + subtopics (optional if you use the full activities file below)
+# 3) Topics + subtopics (required before activities.sql)
 ./scripts/psql-from-db-secret.sh --iam -v ON_ERROR_STOP=1 -d archimedes -f db/seeds/topics.sql
 
-# 4) Activities (large file; already includes topic/subtopic inserts at the top — you can skip topics.sql if you only run this)
+# 4) Activities only (regenerate with: node scripts/generate-activities-seed-sql.js -o db/seeds/activities.sql)
 ./scripts/psql-from-db-secret.sh --iam -v ON_ERROR_STOP=1 -d archimedes -f db/seeds/activities.sql
 ```
 
-**Recommended minimal path** if you want one topics+activities payload: **`archimedes-schema.sql`** → **`schools.sql`** → **`activities.sql`** (skip **`topics.sql`** when using the full **`activities.sql`**).
+**Order:** **`archimedes-schema.sql`** → **`schools.sql`** (if needed) → **`topics.sql`** → **`activities.sql`**.
 
 **`ON_ERROR_STOP=1`** makes **`psql`** exit non-zero on the first SQL error so you do not silently continue after a failure.
 

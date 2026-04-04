@@ -65,7 +65,7 @@ function loadTopicSubtopicPairs(filePath) {
 
 /**
  * Topics: first-seen order. Subtopics: first-seen (topic, sub) order, display_order per topic.
- * Same logic as buildTaxonomy(pairs, []) in generate-activities-seed-sql.js.
+ * UUIDs must match generate-activities-seed-sql.js (same namespace + topic/subtopic strings from CSV).
  */
 function buildTaxonomyFromTopicsCsv(pairs) {
   const topicOrder = new Map();
