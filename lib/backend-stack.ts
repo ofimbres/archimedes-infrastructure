@@ -32,6 +32,28 @@ export interface BackendStackProps extends cdk.StackProps {
    * Additional Cognito logout URLs (e.g. frontend CloudFront URL).
    */
   additionalLogoutUrls?: string[];
+  /**
+   * When true, task uses stock `nginx:alpine` on container port **80** (no ECR image required).
+   * When false or omitted, task uses this stack’s ECR repo tag `latest` on {@link backendContainerPort}.
+   * Configure explicitly (e.g. `context.backendEcs` in `cdk.json`); CDK does not call AWS to detect an empty ECR repo.
+   */
+  useNginxPlaceholder?: boolean;
+  /**
+   * In-container port your app listens on when {@link useNginxPlaceholder} is false. E.g. **8081** for Uvicorn.
+   * Ignored for nginx (always 80).
+   * @default 8081
+   */
+  backendContainerPort?: number;
+  /**
+   * HTTP path for ALB + ECS container health checks when not using nginx placeholder.
+   * @default /api/v1/health/
+   */
+  backendHealthCheckPath?: string;
+  /**
+   * **t4g.nano** in a **public** subnet, **Session Manager** only (no SSH). RDS allows **5432** from this host.
+   * Smallest burstable Graviton jump host (~few USD/mo + small EBS). No NAT in VPC; bastion uses public egress for SSM.
+   */
+  enableSsmBastion?: boolean;
 }
 
 /**
@@ -40,6 +62,7 @@ export interface BackendStackProps extends cdk.StackProps {
  * Cost-conscious setup:
  * - VPC: free (no NAT Gateway; public subnets only).
  * - ECS on EC2: one t4g.micro (~$6–7/mo) instead of Fargate (~$15–20/mo).
+ * - Optional SSM bastion: t4g.nano when `enableSsmBastion` is true.
  * - ALB: ~$16/mo + small LCU usage.
  * - Cognito: free tier 50k MAU; Lambda (custom email): free tier.
  */
@@ -48,6 +71,10 @@ export class BackendStack extends cdk.Stack {
   public readonly userPoolClient: cognito.UserPoolClient;
   public readonly backendRepository: ecr.Repository;
   public readonly cluster: ecs.Cluster;
+  /** ECS service targeted by CI/CD (e.g. CodePipeline EcsDeployAction). */
+  public readonly backendService: ecs.Ec2Service;
+  /** Task definition (GitHub Actions OIDC may need iam:PassRole for ECS deploy). */
+  public readonly backendTaskDefinition: ecs.Ec2TaskDefinition;
   public readonly loadBalancer: elbv2.ApplicationLoadBalancer;
   public readonly database: rds.DatabaseInstance;
 
@@ -198,6 +225,20 @@ exports.handler = async (event) => {
     });
     dbSg.connections.allowFrom(backendSg, ec2.Port.tcp(5432), 'Postgres from backend');
 
+    let ssmBastion: ec2.BastionHostLinux | undefined;
+    if (props?.enableSsmBastion === true) {
+      ssmBastion = new ec2.BastionHostLinux(this, 'SsmBastion', {
+        vpc,
+        subnetSelection: { subnetType: ec2.SubnetType.PUBLIC },
+        instanceType: ec2.InstanceType.of(ec2.InstanceClass.T4G, ec2.InstanceSize.NANO),
+        machineImage: ec2.MachineImage.latestAmazonLinux2023({
+          cpuType: ec2.AmazonLinuxCpuType.ARM_64,
+        }),
+        instanceName: `${stage}-archimedes-rds-bastion`,
+      });
+      dbSg.connections.allowFrom(ssmBastion, ec2.Port.tcp(5432), 'Postgres from SSM bastion');
+    }
+
     // --- RDS Postgres (cheap: db.t4g.micro, ~$12–15/mo) ---
     this.database = new rds.DatabaseInstance(this, 'Database', {
       engine: rds.DatabaseInstanceEngine.postgres({
@@ -209,6 +250,7 @@ exports.handler = async (event) => {
       securityGroups: [dbSg],
       databaseName: 'archimedes',
       credentials: rds.Credentials.fromGeneratedSecret('postgres'),
+      iamAuthentication: true,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
       allocatedStorage: 20,
       publiclyAccessible: false, // Backend in same VPC can reach it; no direct internet
@@ -251,21 +293,51 @@ exports.handler = async (event) => {
     const taskDefinition = new ecs.Ec2TaskDefinition(this, 'BackendTask', {
       networkMode: ecs.NetworkMode.BRIDGE,
     });
+    this.backendTaskDefinition = taskDefinition;
 
     const logDriver = new ecs.AwsLogDriver({
       streamPrefix: `${stage}-archimedes-backend`,
       logRetention: logs.RetentionDays.ONE_WEEK,
     });
 
+    const useNginxPlaceholder = props?.useNginxPlaceholder ?? false;
+    const backendContainerPort = useNginxPlaceholder ? 80 : (props?.backendContainerPort ?? 8001);
+    const backendHealthCheckPath = useNginxPlaceholder ? '/' : (props?.backendHealthCheckPath ?? '/api/v1/health/');
+    const containerImage = useNginxPlaceholder
+      ? ecs.ContainerImage.fromRegistry('public.ecr.aws/docker/library/nginx:alpine')
+      : ecs.ContainerImage.fromEcrRepository(this.backendRepository, 'latest');
+
+    // ALB → EC2 host :80 → container (nginx 80 or app e.g. 8081). Do not force the app to use privileged port 80 in-container.
+    const dbSecret = this.database.secret;
     const container = taskDefinition.addContainer('Backend', {
-      image: ecs.ContainerImage.fromRegistry('public.ecr.aws/docker/library/nginx:alpine'),
+      image: containerImage,
       containerName: 'backend',
       cpu: 256,
       memoryLimitMiB: 256,
-      portMappings: [{ containerPort: 80, hostPort: 80, protocol: ecs.Protocol.TCP }],
+      portMappings: [{ containerPort: backendContainerPort, hostPort: 80, protocol: ecs.Protocol.TCP }],
       logging: logDriver,
+      // IAM DB auth: no DB password in the task. App uses task role + generate_db_auth_token (or equivalent) as password.
+      // One-time SQL on the DB (see stack output DbIamAuthBootstrapSql): GRANT rds_iam TO <master user>;
+      ...(!useNginxPlaceholder && dbSecret
+        ? {
+            environment: {
+              STAGE: stage,
+              USE_IAM_AUTH: 'true',
+              DB_HOST: this.database.dbInstanceEndpointAddress,
+              DB_PORT: this.database.instanceEndpoint.port.toString(),
+              DB_NAME: 'archimedes',
+              AWS_REGION: this.region,
+            },
+            secrets: {
+              DB_IAM_USER: ecs.Secret.fromSecretsManager(dbSecret, 'username'),
+            },
+          }
+        : {}),
       healthCheck: {
-        command: ['CMD-SHELL', 'curl -f http://localhost/ || exit 1'],
+        command: [
+          'CMD-SHELL',
+          `curl -f http://127.0.0.1:${backendContainerPort}${backendHealthCheckPath} || exit 1`,
+        ],
         interval: cdk.Duration.seconds(30),
         timeout: cdk.Duration.seconds(5),
         retries: 3,
@@ -277,6 +349,15 @@ exports.handler = async (event) => {
       taskDefinition,
       serviceName: `${stage}-archimedes-backend-service`,
       desiredCount: 1,
+      // After attachToApplicationTargetGroup, ALB health checks mark targets unhealthy until the app listens;
+      // too short a grace period causes ECS deploy to hang until CF hits "Exceeded attempts to wait".
+      healthCheckGracePeriod: cdk.Duration.minutes(5),
+      // BRIDGE + fixed hostPort: only one task per instance can bind :80. Default maxHealthyPercent 200%
+      // would start a second task during deploy → TaskFailedToStart RESOURCE:PORTS.
+      minHealthyPercent: 0,
+      maxHealthyPercent: 100,
+      // AZ rebalancing requires maxHealthyPercent > 100; incompatible with single-host fixed port above.
+      availabilityZoneRebalancing: ecs.AvailabilityZoneRebalancing.DISABLED,
       capacityProviderStrategies: [
         { capacityProvider: capacityProvider.capacityProviderName, weight: 1 },
       ],
@@ -294,11 +375,12 @@ exports.handler = async (event) => {
       protocol: elbv2.ApplicationProtocol.HTTP,
       targetType: elbv2.TargetType.INSTANCE,
       healthCheck: {
-        path: '/',
+        path: backendHealthCheckPath,
         interval: cdk.Duration.seconds(30),
       },
     });
 
+    this.backendService = service;
     service.attachToApplicationTargetGroup(targetGroup);
 
     this.loadBalancer.addListener('Listener', {
@@ -307,6 +389,10 @@ exports.handler = async (event) => {
       defaultTargetGroups: [targetGroup],
     });
     backendSg.connections.allowFrom(this.loadBalancer, ec2.Port.tcp(80), 'ALB to backend');
+
+    if (dbSecret) {
+      this.database.grantConnect(taskDefinition.taskRole);
+    }
 
     // --- Outputs ---
     new cdk.CfnOutput(this, 'UserPoolId', {
@@ -331,11 +417,23 @@ exports.handler = async (event) => {
     });
     new cdk.CfnOutput(this, 'DbSecretArn', {
       value: this.database.secret!.secretArn,
-      description: 'Secrets Manager ARN for RDS master credentials (username, password, host, port)',
+      description: 'Secrets Manager ARN for RDS master user (admin / bootstrap); ECS only injects username as DB_IAM_USER',
     });
     new cdk.CfnOutput(this, 'DbEndpoint', {
       value: this.database.dbInstanceEndpointAddress,
-      description: 'RDS Postgres endpoint (use with DbSecretArn for connection string)',
+      description: 'RDS Postgres endpoint (also in task env DB_HOST)',
     });
+    new cdk.CfnOutput(this, 'DbIamAuthBootstrapSql', {
+      value: 'GRANT rds_iam TO postgres;',
+      description:
+        'Run once as master via psql (after first deploy): enables IAM tokens for the postgres user matching DB_IAM_USER',
+    });
+    if (ssmBastion) {
+      new cdk.CfnOutput(this, 'SsmBastionInstanceId', {
+        value: ssmBastion.instanceId,
+        description:
+          'aws ssm start-session --target <id>. Port-forward: AWS-StartPortForwardingSessionToRemoteHost host=DbEndpoint:5432. On bastion: dnf install -y postgresql15',
+      });
+    }
   }
 }

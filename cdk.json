@@ -5,6 +5,25 @@
     "@aws-cdk/core:stackRelativeExports": true,
     "@aws-cdk/aws-rds:lowercaseDbIdentifier": true,
     "@aws-cdk/aws-lambda:recognizeVersionProps": true,
-    "@aws-cdk/aws-cloudfront:defaultSecurityPolicyTLSv1.2_2021": true
+    "@aws-cdk/aws-cloudfront:defaultSecurityPolicyTLSv1.2_2021": true,
+    "backendPipeline": {
+      "githubOwner": "ofimbres",
+      "githubRepo": "archimedes-backend",
+      "githubBranch": "main"
+    },
+    "githubActionsCicd": {
+      "githubOrg": "ofimbres",
+      "githubRepo": "archimedes-backend",
+      "githubBranch": "main",
+      "existingGitHubOidcProviderArn": "arn:aws:iam::928483661641:oidc-provider/token.actions.githubusercontent.com"
+    },
+    "backendEcs": {
+      "useNginxPlaceholder": false,
+      "backendContainerPort": 8001,
+      "backendHealthCheckPath": "/api/v1/health/"
+    },
+    "backendBastion": {
+      "enabled": true
+    }
   }
 }
